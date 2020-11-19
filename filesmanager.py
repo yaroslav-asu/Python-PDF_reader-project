@@ -266,7 +266,8 @@ class WidgetWithButton(QWidget):
         self.vertical_layout.addWidget(label)
 
     def open_file(self):
-        self.open_pdf_browser = pdfbrowser.PdfBrowser(self.text, self.start_page, self)
+        self.open_pdf_browser = pdfbrowser.PdfBrowser(self.text, self.start_page,
+                                                      self.parent)
         self.parent.hide()
         self.open_pdf_browser.show()
 

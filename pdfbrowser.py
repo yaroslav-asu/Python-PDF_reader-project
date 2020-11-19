@@ -269,10 +269,12 @@ null and Main.last_page is not ''"""
                                      QMessageBox.No)
         if reply == QMessageBox.Yes:
             self.close()
+            print(self.file_manager)
             if self.file_manager:
                 self.file_manager.show()
             else:
-                filesmanager.PdfFilesManager().show()
+                self.a = filesmanager.PdfFilesManager()
+                self.a.show()
 
     def closeEvent(self, event):
         sqlite_action = f"""update Main set last_page = {self.PageNumber} \
