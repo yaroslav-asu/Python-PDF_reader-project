@@ -6,37 +6,36 @@ from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QMainWindow, QWidget, QMessageBox
 from PyQt5 import QtCore
 
-file_name_in_label = None
-bookmark_page_global = None
-group_id = None
-connection = None
-cursor = None
-list_with_groups_widgets = []
-check_boxes_list = []
-check_box_unchecked_by_function = False
 
-
-def clear_all_checkboxes():
-    global check_box_unchecked_by_function, check_boxes_list
-    check_box_unchecked_by_function = True
-    for checkbox in check_boxes_list:
-        checkbox.setChecked(False)
+class InterfaceTracks:
+    file_name_in_label = None
+    bookmark_page_global = None
+    group_id = None
+    connection = None
+    cursor = None
+    list_with_groups_widgets = []
+    check_boxes_list = []
     check_box_unchecked_by_function = False
 
 
+def clear_all_checkboxes():
+    InterfaceTracks.check_box_unchecked_by_function = True
+    for checkbox in InterfaceTracks.check_boxes_list:
+        checkbox.setChecked(False)
+    InterfaceTracks.check_box_unchecked_by_function = False
+
+
 def is_checkbox_checked():
-    global check_boxes_list
-    for checkbox in check_boxes_list:
+    for checkbox in InterfaceTracks.check_boxes_list:
         if checkbox.isChecked():
             return True
     return False
 
 
 def get_sqlite_request(request):
-    global connection, cursor
-    cursor.execute(request)
-    connection.commit()
-    return cursor.fetchall()
+    InterfaceTracks.cursor.execute(request)
+    InterfaceTracks.connection.commit()
+    return InterfaceTracks.cursor.fetchall()
 
 
 def fill_layouts_with_widgets(parent, layouts_tuple, data_tuple, widgets, actions):
@@ -49,9 +48,8 @@ def fill_layouts_with_widgets(parent, layouts_tuple, data_tuple, widgets, action
 
 
 def fill_layout(parent, layout, text, widget, action, bookmark_page=0):
-    global file_name_in_label, bookmark_page_global
-    bookmark_page_global = bookmark_page
-    file_name_in_label = text
+    InterfaceTracks.bookmark_page_global = bookmark_page
+    InterfaceTracks.file_name_in_label = text
     if not bookmark_page:
         bookmark_page = 1
 
@@ -81,22 +79,21 @@ def fill_layout(parent, layout, text, widget, action, bookmark_page=0):
 class PdfFilesManager(QMainWindow):
     def __init__(self):
         super().__init__()
-        #TODO разбить на функции
-        global group_id, connection, cursor
+        # TODO разбить на функции
         uic.loadUi('C:/Python Projects/Pdf reader/uploadedfiles.ui', self)
-        connection = sqlite3.connect("Pdf_reader_db.sqlite")
-        cursor = connection.cursor()
+        InterfaceTracks.connection = sqlite3.connect("Pdf_reader_db.sqlite")
+        InterfaceTracks.cursor = InterfaceTracks.connection.cursor()
 
         sql_insert_query = """delete from Groups where group_name = ''"""
-        cursor.execute(sql_insert_query)
+        InterfaceTracks.cursor.execute(sql_insert_query)
 
         self.CreateGroupButton.clicked.connect(self.create_group_button_action)
         self.uploadFileButton.clicked.connect(partial(self.update_layouts, self.OpenedFilesHLayout))
 
         sql_insert_query = """insert into Groups (group_name) values ('')"""
-        cursor.execute(sql_insert_query)
+        InterfaceTracks.cursor.execute(sql_insert_query)
         sql_insert_query = """select id from Groups where group_name = ''"""
-        group_id = get_sqlite_request(sql_insert_query)[0][0]
+        InterfaceTracks.group_id = get_sqlite_request(sql_insert_query)[0][0]
 
         sql_insert_query = """Select FileData.file_name from Main join FileData on FileData.id = 
         Main.file_name where 
@@ -142,8 +139,7 @@ class PdfFilesManager(QMainWindow):
         self.group_name = None
 
     def create_group_button_action(self):
-        global connection, group_id, check_boxes_list, check_box_unchecked_by_function
-        connection.commit()
+        InterfaceTracks.connection.commit()
         self.group_name = self.group_name_line_edit.text()
 
         if self.group_name == '':
@@ -167,23 +163,21 @@ class PdfFilesManager(QMainWindow):
             QMessageBox.information(self, "Оповещение ", "Группа успешно создана",
                                     QMessageBox.Ok)
             sql_insert_query = f"""Update Groups set group_name = '{self.group_name}' where id = '{
-            group_id}'"""
-            cursor.execute(sql_insert_query)
-            connection.commit()
+            InterfaceTracks.group_id}'"""
+            InterfaceTracks.cursor.execute(sql_insert_query)
+            InterfaceTracks.connection.commit()
             sql_insert_query = """insert into Groups (group_name) values ('')"""
-            cursor.execute(sql_insert_query)
-            group_id += 1
+            InterfaceTracks.cursor.execute(sql_insert_query)
+            InterfaceTracks.group_id += 1
             self.update_layouts(self.GroupsHLayout)
 
     def delete_group(self, group_name):
         sql_insert_query = f"""Delete from Groups where main.Groups.group_name = '{group_name}'"""
-        cursor.execute(sql_insert_query)
-        connection.commit()
+        InterfaceTracks.cursor.execute(sql_insert_query)
+        InterfaceTracks.connection.commit()
         self.update_layouts(self.delete_groups_layout)
 
     def update_layouts(self, layout):
-        print(layout)
-        global list_with_groups_widgets
         index = layout.count() - 1
         while (index >= 0):
             widget = layout.itemAt(index).widget()
@@ -215,15 +209,13 @@ class PdfFilesManager(QMainWindow):
                                   (action,))
 
     def closeEvent(self, event):
-        # connection.close()
+        # InterfaceTracks.connection.close()
         event.accept()
 
 
 class WidgetWithButton(QWidget):
     def __init__(self, parent, text, action, bookmark_page=0):
         super().__init__(parent)
-        global file_name_in_label, bookmark_page_global, list_with_groups_widgets
-
         uic.loadUi('C:/Python Projects/Pdf reader/opened_file_data_widget.ui', self)
         self.parent = parent
         self.start_page = bookmark_page
@@ -236,21 +228,21 @@ class WidgetWithButton(QWidget):
         elif action == 'OpenFileWithStartPage':
             self.text = text[0]
             self.Button.clicked.connect(self.open_file)
-            self.create_bookmark_page_label(bookmark_page_global)
+            self.create_bookmark_page_label(InterfaceTracks.bookmark_page_global)
         elif action == 'OpenFileFromGroup':
             self.text = text[0]
             self.Button.clicked.connect(self.open_file_from_group)
         elif action == 'DelGroup':
             self.Button.clicked.connect(self.delete_group)
             self.Button.setText('Удалить')
-            list_with_groups_widgets.append(self)
+            InterfaceTracks.list_with_groups_widgets.append(self)
         elif action == 'OpenGroup':
             self.Button.setText('Просмотреть')
             self.Button.clicked.connect(self.open_group)
-            list_with_groups_widgets.append(self)
+            InterfaceTracks.list_with_groups_widgets.append(self)
             self.group_name = text
 
-        self.file_name_label.setText(file_name_in_label)
+        self.file_name_label.setText(InterfaceTracks.file_name_in_label)
 
     def delete_group(self):
         self.parent.delete_group(self.text)
@@ -294,24 +286,24 @@ class SelectFile(QWidget):
     def __init__(self, parent, file_name, action):
         super().__init__(parent)
         self.parent = parent
-        global list_with_groups_widgets, check_boxes_list
 
         uic.loadUi('C:/Python Projects/Pdf reader/select_file_to_create_group_widget.ui', self)
         if action == 'SelectFile':
             self.file_name = file_name
             self.file_name_label.setText(self.file_name)
             self.checkBox.stateChanged.connect(self.checkbox_handler)
-        check_boxes_list.append(self.checkBox)
+        InterfaceTracks.check_boxes_list.append(self.checkBox)
 
     def checkbox_handler(self):
-        global group_id, check_box_unchecked_by_function
         if self.checkBox.checkState():
-            sql_insert_query = """insert into GroupsElements (group_id, file_name) values (?, 
+            sql_insert_query = """insert into GroupsElements (group_id, 
+            file_name) values (?, 
             ?)"""
-            cursor.execute(sql_insert_query, (group_id, self.file_name))
-            connection.commit()
-        elif not check_box_unchecked_by_function:
+            InterfaceTracks.cursor.execute(sql_insert_query, (InterfaceTracks.group_id,
+                                                              self.file_name))
+            InterfaceTracks.connection.commit()
+        elif not InterfaceTracks.check_box_unchecked_by_function:
             sql_insert_query = f"""delete from GroupsElements where file_name = '{self.file_name}' \
-    and group_id = '{group_id}'"""
-            cursor.execute(sql_insert_query)
-            connection.commit()
+    and group_id = '{InterfaceTracks.group_id}'"""
+            InterfaceTracks.cursor.execute(sql_insert_query)
+            InterfaceTracks.connection.commit()

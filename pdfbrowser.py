@@ -267,7 +267,6 @@ null and Main.last_page is not ''"""
                                      QMessageBox.No)
         if reply == QMessageBox.Yes:
             self.close()
-            print(self.file_manager)
             if self.file_manager:
                 self.file_manager.show()
             else:
