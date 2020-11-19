@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import QGridLayout
 class PdfBrowser(QMainWindow):
     gridLayout: QGridLayout
     pushButton: QPushButton
+
     # var:int
 
     def __init__(self, link_to_file, start_page=1, file_manager=None):
@@ -41,18 +42,18 @@ class PdfBrowser(QMainWindow):
         # ----------
 
         # Buttons
-        self.ZoomPlusButton.clicked.connect(self.ZoomPlus)
-        self.ZoomMinusButton.clicked.connect(self.ZoomMinus)
-        self.ZoomCoofLineEdit.editingFinished.connect(self.ZoomChange)
+        self.ZoomPlusButton.clicked.connect(self.zoom_plus)
+        self.ZoomMinusButton.clicked.connect(self.zoom_minus)
+        self.ZoomCoofLineEdit.editingFinished.connect(self.zoom_change)
         self.ZoomCoofLineEdit.setText('1')
 
-        self.PageUpButton.clicked.connect(self.PageUp)
-        self.PageDownButton.clicked.connect(self.PageDown)
-        self.PageNumberLineEdit.editingFinished.connect(self.PageChange)
+        self.PageUpButton.clicked.connect(self.page_up)
+        self.PageDownButton.clicked.connect(self.page_down)
+        self.PageNumberLineEdit.editingFinished.connect(self.page_change)
         self.PageNumberLineEdit.setText('1')
 
-        self.SwitchBookmarkButton.clicked.connect(self.SwitchBookmarkButtonAction)
-        self.OpenFileManagerButton.clicked.connect(self.OpenFileManager)
+        self.SwitchBookmarkButton.clicked.connect(self.switch_bookmark_button_action)
+        self.OpenFileManagerButton.clicked.connect(self.open_file_manager)
         # ----------
 
         sqlite_insert_query = f"""select id from FileData where file_name = '{self.file_name}' 
@@ -105,16 +106,16 @@ null and Main.last_page is not ''"""
         if link_to_file:
             with open(link_to_file, 'rb') as file:
                 self.base64data = base64.b64encode(file.read()).decode('utf-8')
-                self.browser.loadFinished.connect(self.LoadPdfWithJS)
+                self.browser.loadFinished.connect(self.load_pdf_with_js)
         else:
             error_dialog = QtWidgets.QErrorMessage()
             error_dialog.showMessage('Не указан путь к файлу!')
         self.browser.load(QUrl('C:/Python Projects/Pdf reader/main.html'))
 
-        self.SwitchBookmarkButtonSetText()
+        self.switch_bookmark_button_set_text()
         self.PageNumberLineEdit.setText(str(self.PageNumber))
 
-    def LoadPdfWithJS(self):
+    def load_pdf_with_js(self):
         self.browser.page().runJavaScript(f'let myJsVar = atob("{self.base64data}")')
         self.browser.page().runJavaScript(f'pageNumber = {self.PageNumber}')
         self.browser.page().runJavaScript('showPage()')
@@ -123,18 +124,18 @@ null and Main.last_page is not ''"""
             (doc) {window.numPages '
             '= doc.numPages})')
 
-    def AddBookmark(self):
+    def add_bookmark(self):
         sqlite_action = """Insert into Bookmarks (file_name, page) values (?, ?)"""
         data_tuple = (self.current_file_data_id, self.PageNumber)
         self.cursor.execute(sqlite_action, data_tuple)
         self.connection.commit()
 
-    def DelBookmark(self):
+    def del_bookmark(self):
         sqlite_action = f"""delete from Bookmarks where page = {self.PageNumber}"""
         self.cursor.execute(sqlite_action)
         self.connection.commit()
 
-    def IsBookmarkOnPage(self, PageNumber):
+    def is_bookmark_on_page(self, PageNumber):
 
         self.bookmarks = list(self.cursor.execute(
             f"""select page from Bookmarks inner join FileData on FileData.id 
@@ -146,43 +147,43 @@ null and Main.last_page is not ''"""
         else:
             return False
 
-    def SwitchBookmarkButtonSetText(self):
-        if self.IsBookmarkOnPage(self.PageNumber):
+    def switch_bookmark_button_set_text(self):
+        if self.is_bookmark_on_page(self.PageNumber):
             self.SwitchBookmarkButton.setText('Удалить закладку')
         else:
             self.SwitchBookmarkButton.setText('Добавить закладку')
 
-    def SwitchBookmarkButtonAction(self):
-        if self.IsBookmarkOnPage(self.PageNumber):
-            self.SwitchBookmarkButtonSetText()
-            self.DelBookmark()
+    def switch_bookmark_button_action(self):
+        if self.is_bookmark_on_page(self.PageNumber):
+            self.switch_bookmark_button_set_text()
+            self.del_bookmark()
         else:
-            self.SwitchBookmarkButtonSetText()
-            self.AddBookmark()
-        self.SwitchBookmarkButtonSetText()
+            self.switch_bookmark_button_set_text()
+            self.add_bookmark()
+        self.switch_bookmark_button_set_text()
 
-    def PageUp(self):
+    def page_up(self):
         self.PageUpButton.setEnabled(False)
         self.PageNewNumber = self.PageNumber - 1
         self.browser.page().runJavaScript(
-            'window.numPages', self.PageChange)
+            'window.numPages', self.page_change)
         self.browser.page().runJavaScript(
-            '', partial(self.ButtonsColdown, self.PageUpButton))
+            '', partial(self.buttons_cool_down, self.PageUpButton))
 
-    def PageDown(self):
+    def page_down(self):
         self.PageDownButton.setEnabled(False)
         self.PageNewNumber = self.PageNumber + 1
         self.browser.page().runJavaScript(
-            'window.numPages', self.PageChange)
+            'window.numPages', self.page_change)
         self.browser.page().runJavaScript(
-            '', partial(self.ButtonsColdown, self.PageDownButton))
+            '', partial(self.buttons_cool_down, self.PageDownButton))
 
-    def PageChange(self, PagesAmount=None):
+    def page_change(self, PagesAmount=None):
         if self.StopAllTrigger:
             return
         if self.PagesAmount == -1 and PagesAmount == None:
             self.browser.page().runJavaScript(
-                'window.numPages', self.PageChange)
+                'window.numPages', self.page_change)
         elif self.PagesAmount == -1:
             self.PagesAmount = PagesAmount
 
@@ -197,7 +198,7 @@ null and Main.last_page is not ''"""
                 f'pageNumber = {self.PageNumber}')
             self.browser.page().runJavaScript(
                 f'showPage()')
-        self.SwitchBookmarkButtonSetText()
+        self.switch_bookmark_button_set_text()
 
     def parse_page_number(self):
         """
@@ -217,49 +218,49 @@ null and Main.last_page is not ''"""
             self.PageNewNumber = self.PageNumber
             self.PageNumberLineEdit.setText(str(self.PageNumber))
 
-    def ZoomChange(self, CurrentZoom=None):
-        if CurrentZoom == None:
+    def zoom_change(self, current_zoom=None):
+        if current_zoom == None:
             if self.ZoomCoofLineEdit.text().replace('.', '', 1).isdigit():
-                CurrentZoom = float(self.ZoomCoofLineEdit.text())
+                current_zoom = float(self.ZoomCoofLineEdit.text())
             else:
-                self.ZoomTextLineSetText(self.Zoom)
+                self.zoom_text_line_set_text(self.Zoom)
                 return
 
-        if 0 < CurrentZoom <= 5 and CurrentZoom != self.Zoom:
-            self.Zoom = CurrentZoom
-            self.ZoomTextLineSetText(CurrentZoom)
+        if 0 < current_zoom <= 5 and current_zoom != self.Zoom:
+            self.Zoom = current_zoom
+            self.zoom_text_line_set_text(current_zoom)
             self.browser.page().runJavaScript(
                 f'scale = {self.Zoom}')
             self.browser.page().runJavaScript(
                 f'showPage()')
 
-    def ZoomTextLineSetText(self, CurrentZoom):
-        if str(CurrentZoom).replace('.', '', 1).isdigit():
-            if float(CurrentZoom).is_integer():
-                self.ZoomCoofLineEdit.setText(str(int(CurrentZoom)))
+    def zoom_text_line_set_text(self, current_zoom):
+        if str(current_zoom).replace('.', '', 1).isdigit():
+            if float(current_zoom).is_integer():
+                self.ZoomCoofLineEdit.setText(str(int(current_zoom)))
             else:
-                self.ZoomCoofLineEdit.setText(str(CurrentZoom))
+                self.ZoomCoofLineEdit.setText(str(current_zoom))
         else:
             self.ZoomCoofLineEdit.setText(str(self.Zoom))
 
-    def ZoomPlus(self):
+    def zoom_plus(self):
         self.ZoomPlusButton.setEnabled(False)
         ZoomNew = self.Zoom + 0.5
-        self.ZoomChange(ZoomNew)
+        self.zoom_change(ZoomNew)
         self.browser.page().runJavaScript(
-            '', partial(self.ButtonsColdown, self.ZoomPlusButton))
+            '', partial(self.buttons_cool_down, self.ZoomPlusButton))
 
-    def ZoomMinus(self):
+    def zoom_minus(self):
         self.ZoomMinusButton.setEnabled(False)
         ZoomNew = self.Zoom - 0.5
-        self.ZoomChange(ZoomNew)
+        self.zoom_change(ZoomNew)
         self.browser.page().runJavaScript(
-            '', partial(self.ButtonsColdown, self.ZoomMinusButton))
+            '', partial(self.buttons_cool_down, self.ZoomMinusButton))
 
-    def ButtonsColdown(self, *args):
+    def buttons_cool_down(self, *args):
         args[0].setEnabled(True)
 
-    def OpenFileManager(self):
+    def open_file_manager(self):
         reply = QMessageBox.question(self, 'Оповещение',
                                      "Текущая страница просмотра закроется! \n Вы точно хотите "
                                      "продолжить? ",
