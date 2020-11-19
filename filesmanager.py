@@ -1,14 +1,9 @@
-import base64
-import sys
-import traceback
 import sqlite3
 import pdfbrowser
 import showgroupselements
 from functools import partial
-from PyQt5 import QtWebEngineWidgets, QtWidgets, uic, QtGui
-from PyQt5.QtCore import QUrl, Qt
-from PyQt5.QtWidgets import QMainWindow, QApplication, QSizePolicy, QPushButton, QFileDialog, \
-    QWidget, QLabel, QMessageBox
+from PyQt5 import QtWidgets, uic
+from PyQt5.QtWidgets import QMainWindow, QWidget, QMessageBox
 from PyQt5 import QtCore
 
 file_name_in_label = None

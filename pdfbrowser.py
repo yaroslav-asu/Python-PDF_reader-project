@@ -1,14 +1,12 @@
 import base64
 import sqlite3
-import sys
 import filesmanager
 from functools import partial
 from datetime import datetime
 
-from PyQt5 import QtWebEngineWidgets, QtWidgets, uic, QtGui
+from PyQt5 import QtWebEngineWidgets, QtWidgets, uic
 from PyQt5.QtCore import QUrl
-from PyQt5.QtWidgets import QMainWindow, QApplication, QSizePolicy, QPushButton, QFileDialog, \
-    QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QPushButton, QMessageBox
 from PyQt5.QtWidgets import QGridLayout
 
 
@@ -284,9 +282,3 @@ null and Main.last_page is not ''"""
         self.connection.commit()
         # self.connection.close()
         event.accept()
-
-# if __name__ == '__main__':
-#     app = QApplication(sys.argv)
-#     ex = PdfBrowser('pdfs/Russko-cheshskiy_tematicheskiy_slovar_9000_slov.pdf')
-#     ex.show()
-#     sys.exit(app.exec())

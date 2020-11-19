@@ -1,16 +1,5 @@
-import base64
-import sys
-import traceback
-
-sys._excepthook = sys.excepthook
-
-from PyQt5 import QtWebEngineWidgets, QtWidgets, uic, QtGui
-from PyQt5.QtCore import QUrl
-from PyQt5.QtWidgets import QMainWindow, QApplication, QSizePolicy, QPushButton, QFileDialog
-from PyQt5.QtWidgets import QGridLayout
-
-import pdfbrowser
-import filesmanager
+from PyQt5 import uic
+from PyQt5.QtWidgets import QMainWindow
 
 
 class Window(QMainWindow):
