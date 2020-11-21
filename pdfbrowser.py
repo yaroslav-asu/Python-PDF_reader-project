@@ -22,6 +22,9 @@ class PdfBrowser(QMainWindow):
 
     def __init__(self, link_to_file, start_page=1, file_manager=None):
         super().__init__()
+
+        self.a = 0
+
         self.connection = sqlite3.connect("Pdf_reader_db.sqlite")
         self.cursor = self.connection.cursor()
 
@@ -53,7 +56,7 @@ class PdfBrowser(QMainWindow):
 
         self.PageUpButton.clicked.connect(self.page_up)
         self.PageDownButton.clicked.connect(self.page_down)
-        self.PageNumberLineEdit.editingFinished.connect(self.page_change)
+        self.PageNumberLineEdit.editingFinished.connect(self.parse_page_number)
         self.PageNumberLineEdit.setText('1')
 
         self.SwitchBookmarkButton.clicked.connect(self.switch_bookmark_button_action)
@@ -140,7 +143,6 @@ null and Main.last_page is not ''"""
         self.connection.commit()
 
     def is_bookmark_on_page(self, PageNumber):
-
         self.bookmarks = list(self.cursor.execute(
             f"""select page from Bookmarks inner join FileData on FileData.id 
 = Bookmarks.file_name
@@ -169,40 +171,37 @@ null and Main.last_page is not ''"""
     def page_up(self):
         self.PageUpButton.setEnabled(False)
         self.page_new_number = self.PageNumber - 1
-        self.browser.page().runJavaScript(
-            'window.numPages', self.page_change)
+        self.page_change()
         self.browser.page().runJavaScript(
             '', partial(buttons_cool_down, self.PageUpButton))
 
     def page_down(self):
         self.PageDownButton.setEnabled(False)
         self.page_new_number = self.PageNumber + 1
-        self.browser.page().runJavaScript(
-            'window.numPages', self.page_change)
+        self.page_change()
         self.browser.page().runJavaScript(
             '', partial(buttons_cool_down, self.PageDownButton))
 
-    def page_change(self, PagesAmount=None):
-        if self.StopAllTrigger:
-            return
-        if self.PagesAmount == -1 and PagesAmount == None:
-            self.browser.page().runJavaScript(
-                'window.numPages', self.page_change)
-        elif self.PagesAmount == -1:
-            self.PagesAmount = PagesAmount
 
-        if PagesAmount == None:
-            # parse page number
-            self.parse_page_number()
-
-        if 0 < self.page_new_number <= self.PagesAmount and self.page_new_number != self.PageNumber:
+    def pages_amount(self, arg):
+        if 0 < self.page_new_number <= arg and self.page_new_number != self.PageNumber:
             self.PageNumber = self.page_new_number
             self.PageNumberLineEdit.setText(str(self.PageNumber))
             self.browser.page().runJavaScript(
                 f'pageNumber = {self.PageNumber}')
             self.browser.page().runJavaScript(
                 f'showPage()')
-        self.switch_bookmark_button_set_text()
+            # print(self.PageNumber)
+            self.switch_bookmark_button_set_text()
+
+    def page_change(self, new_number=None):
+
+        if self.StopAllTrigger:
+            return
+
+        self.browser.page().runJavaScript(
+            'get_amo()', self.pages_amount
+        )
 
     def parse_page_number(self):
         """
@@ -221,6 +220,7 @@ null and Main.last_page is not ''"""
         else:
             self.page_new_number = self.PageNumber
             self.PageNumberLineEdit.setText(str(self.PageNumber))
+        self.page_change()
 
     def zoom_change(self, current_zoom=None):
         if not current_zoom:
