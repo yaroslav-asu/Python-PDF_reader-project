@@ -179,7 +179,7 @@ class PdfFilesManager(QMainWindow):
 
     def update_layouts(self, layout):
         index = layout.count() - 1
-        while (index >= 0):
+        while index >= 0:
             widget = layout.itemAt(index).widget()
             widget.setParent(None)
             index -= 1
@@ -250,6 +250,7 @@ class WidgetWithButton(QWidget):
     def create_bookmark_page_label(self, text):
         label = QtWidgets.QLabel()
         label.setText('Страница: ' + str(text))
+        label.setAlignment(QtCore.Qt.AlignHCenter)
         self.vertical_layout.addWidget(label)
 
     def open_file(self):

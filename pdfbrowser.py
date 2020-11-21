@@ -10,6 +10,10 @@ from PyQt5.QtWidgets import QMainWindow, QPushButton, QMessageBox
 from PyQt5.QtWidgets import QGridLayout
 
 
+def buttons_cool_down(*args):
+    args[0].setEnabled(True)
+
+
 class PdfBrowser(QMainWindow):
     gridLayout: QGridLayout
     pushButton: QPushButton
@@ -164,19 +168,19 @@ null and Main.last_page is not ''"""
 
     def page_up(self):
         self.PageUpButton.setEnabled(False)
-        self.PageNewNumber = self.PageNumber - 1
+        self.page_new_number = self.PageNumber - 1
         self.browser.page().runJavaScript(
             'window.numPages', self.page_change)
         self.browser.page().runJavaScript(
-            '', partial(self.buttons_cool_down, self.PageUpButton))
+            '', partial(buttons_cool_down, self.PageUpButton))
 
     def page_down(self):
         self.PageDownButton.setEnabled(False)
-        self.PageNewNumber = self.PageNumber + 1
+        self.page_new_number = self.PageNumber + 1
         self.browser.page().runJavaScript(
             'window.numPages', self.page_change)
         self.browser.page().runJavaScript(
-            '', partial(self.buttons_cool_down, self.PageDownButton))
+            '', partial(buttons_cool_down, self.PageDownButton))
 
     def page_change(self, PagesAmount=None):
         if self.StopAllTrigger:
@@ -191,8 +195,8 @@ null and Main.last_page is not ''"""
             # parse page number
             self.parse_page_number()
 
-        if 0 < self.PageNewNumber <= self.PagesAmount and self.PageNewNumber != self.PageNumber:
-            self.PageNumber = self.PageNewNumber
+        if 0 < self.page_new_number <= self.PagesAmount and self.page_new_number != self.PageNumber:
+            self.PageNumber = self.page_new_number
             self.PageNumberLineEdit.setText(str(self.PageNumber))
             self.browser.page().runJavaScript(
                 f'pageNumber = {self.PageNumber}')
@@ -206,20 +210,20 @@ null and Main.last_page is not ''"""
 
         вызывается при ... что тут происходит
         """
-        PageNumberInTextLine = self.PageNumberLineEdit.text()
-        if PageNumberInTextLine.isdigit():
-            if int(PageNumberInTextLine) != self.PageNumber and \
-                self.PagesAmount >= int(PageNumberInTextLine) > 0:
-                self.PageNewNumber = int(self.PageNumberLineEdit.text())
+        page_number_in_text_line = self.PageNumberLineEdit.text()
+        if page_number_in_text_line.isdigit():
+            if int(page_number_in_text_line) != self.PageNumber and \
+                self.PagesAmount >= int(page_number_in_text_line) > 0:
+                self.page_new_number = int(self.PageNumberLineEdit.text())
             else:
                 self.PageNumberLineEdit.setText(str(self.PageNumber))
-                self.PageNewNumber = self.PageNumber
+                self.page_new_number = self.PageNumber
         else:
-            self.PageNewNumber = self.PageNumber
+            self.page_new_number = self.PageNumber
             self.PageNumberLineEdit.setText(str(self.PageNumber))
 
     def zoom_change(self, current_zoom=None):
-        if current_zoom == None:
+        if not current_zoom:
             if self.ZoomCoofLineEdit.text().replace('.', '', 1).isdigit():
                 current_zoom = float(self.ZoomCoofLineEdit.text())
             else:
@@ -245,20 +249,17 @@ null and Main.last_page is not ''"""
 
     def zoom_plus(self):
         self.ZoomPlusButton.setEnabled(False)
-        ZoomNew = self.Zoom + 0.5
-        self.zoom_change(ZoomNew)
+        zoom_new = self.Zoom + 0.5
+        self.zoom_change(zoom_new)
         self.browser.page().runJavaScript(
-            '', partial(self.buttons_cool_down, self.ZoomPlusButton))
+            '', partial(buttons_cool_down, self.ZoomPlusButton))
 
     def zoom_minus(self):
         self.ZoomMinusButton.setEnabled(False)
-        ZoomNew = self.Zoom - 0.5
-        self.zoom_change(ZoomNew)
+        zoom_new = self.Zoom - 0.5
+        self.zoom_change(zoom_new)
         self.browser.page().runJavaScript(
-            '', partial(self.buttons_cool_down, self.ZoomMinusButton))
-
-    def buttons_cool_down(self, *args):
-        args[0].setEnabled(True)
+            '', partial(buttons_cool_down, self.ZoomMinusButton))
 
     def open_file_manager(self):
         reply = QMessageBox.question(self, 'Оповещение',
@@ -271,8 +272,7 @@ null and Main.last_page is not ''"""
             if self.file_manager:
                 self.file_manager.show()
             else:
-                self.a = filesmanager.PdfFilesManager()
-                self.a.show()
+                filesmanager.PdfFilesManager().show()
 
     def closeEvent(self, event):
         sqlite_action = f"""update Main set last_page = {self.PageNumber} \
