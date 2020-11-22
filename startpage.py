@@ -15,7 +15,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        uic.loadUi("C:/Python Projects/Pdf reader/startpage.ui", self)
+        uic.loadUi("startpage.ui", self)
         self.SelectFileButton.clicked.connect(self.SelectFile)
         self.OpenNewFileButton.clicked.connect(self.OpenNewFile)
 
