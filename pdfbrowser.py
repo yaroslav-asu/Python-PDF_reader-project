@@ -26,12 +26,9 @@ def buttons_cooldown(*args):
 class PdfBrowser(QMainWindow):
     gridLayout: QGridLayout
     pushButton: QPushButton
-    # current_file_data_id_exist: list
     current_file_data_id: int
     base64data: base64
     bookmarks: list
-
-    # var:int
 
     def __init__(self, link_to_file, start_page=1, file_manager=None):
         super().__init__()
@@ -110,7 +107,6 @@ class PdfBrowser(QMainWindow):
         not ''"""
         self.cursor.execute(sqlite_insert_query)
         sqlite_last_page_answer = self.cursor.fetchone()
-        print(sqlite_last_page_answer)
 
         if self.start_page == 1 and sqlite_last_page_answer:
             if sqlite_last_page_answer != (None, None) and sqlite_last_page_answer[1] != 1:
@@ -129,8 +125,8 @@ class PdfBrowser(QMainWindow):
                 self.base64data = base64.b64encode(file.read()).decode('utf-8')
                 self.browser.loadFinished.connect(self.load_pdf_with_js)
         else:
-            error_dialog = QtWidgets.QErrorMessage()
-            error_dialog.showMessage('Не указан путь к файлу!')
+            QMessageBox.critical(self, "Ошибка ", f'Файл по этому пути не может быть получен',
+                                 QMessageBox.Ok)
 
         link_to_html = '/'.join(abspath(getsourcefile(lambda: 0)).split('\\')[:-1] + ['main.html'])
         self.browser.load(QUrl(link_to_html))
