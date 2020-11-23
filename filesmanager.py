@@ -27,7 +27,7 @@ def clear_all_checkboxes():
     Вызывается при зоздании новой группы
     """
     InterfaceTracks.check_box_unchecked_by_function = True
-    for checkbox in InterfaceTracks.check_boxes_list:
+    for checkbox in list(InterfaceTracks.check_boxes_list):
         checkbox.setChecked(False)
     InterfaceTracks.check_box_unchecked_by_function = False
 
@@ -50,7 +50,7 @@ def is_checkbox_checked():
     Проверяет выбран ли чекбокс или нет
     :return: bool выбран ли чекбокс
     """
-    for checkbox in InterfaceTracks.check_boxes_list:
+    for checkbox in list(InterfaceTracks.check_boxes_list):
         if checkbox.isChecked():
             return True
     return False
@@ -114,9 +114,9 @@ def fill_layout(parent, layout, text, widget, action, bookmark_page=0):
     link_to_file = get_sqlite_request(sql_insert_query)
 
     if action == 'OpenFile' or action == 'OpenFileFromGroup' or action == 'OpenFileWithStartPage':
-        # if link_to_file != []:
-        layout.addWidget(widget(parent, link_to_file[0], action, bookmark_page),
-                         QtCore.Qt.AlignCenter)
+        if link_to_file != []:
+            layout.addWidget(widget(parent, link_to_file[0], action, bookmark_page),
+                             QtCore.Qt.AlignCenter)
     elif action == 'SelectFile' or action == 'DelGroup' or action == 'OpenGroup':
         layout.addWidget(widget(parent, text, action),
                          QtCore.Qt.AlignCenter)
@@ -134,8 +134,9 @@ class PdfFilesManager(QMainWindow):
         InterfaceTracks.cursor.execute(sql_insert_query)
 
         self.CreateGroupButton.clicked.connect(self.create_group_button_action)
-        for i in [self.upload_new_file, partial(self.update_layouts, [self.OpenedFilesHLayout])]:
-            self.uploadFileButton.clicked.connect(i)
+        for action in [self.upload_new_file, partial(self.update_layouts,
+                                                     [self.OpenedFilesHLayout, self.select_widgets_layout])]:
+            self.uploadFileButton.clicked.connect(action)
 
         sql_insert_query = """insert into Groups (group_name) values ('')"""
         InterfaceTracks.cursor.execute(sql_insert_query)
@@ -163,14 +164,14 @@ class PdfFilesManager(QMainWindow):
 
         open_groups_layout = self.GroupsHLayout
 
-        sql_insert_query = """Select FileData.file_name from Main join FileData on
-                        FileData.id = Main.file_name"""
+        sql_insert_query = """Select FileData.file_name from FileData where file_name is not '' 
+        and file_name is not null"""
         data4 = sorted(list(map(lambda x: x[0], set(get_sqlite_request(
             sql_insert_query)))))
-        layout4 = self.select_widgets_layout
+        select_widget_layout = self.select_widgets_layout
 
         self.layouts_tuple = (
-            layout4, uploaded_files_layout, bookmarks_layout, delete_groups_layout,
+            select_widget_layout, uploaded_files_layout, bookmarks_layout, delete_groups_layout,
             open_groups_layout)
         self.data_tuple = (data4, uploaded_files_data, bookmarks_data) + (groups_data,) * 2
         self.actions_tuple = (
@@ -295,7 +296,17 @@ class PdfFilesManager(QMainWindow):
                 data = get_sqlite_request(sql_insert_query)
                 action = "OpenFileWithStartPage"
                 # InterfaceTracks.bookmark_page_interface =
+            elif layout == self.select_widgets_layout:
+                widget = SelectFile
+                sql_insert_query = """Select file_name from FileData where file_name is 
+                                                      not '' and file_name is not null"""
+                data = sorted(list(map(lambda x: x[0], set(get_sqlite_request(
+                    sql_insert_query)))))
+                data = list(
+                    filter(lambda x: 'pdf' in x.split('.')[1], data))
+                action = 'SelectFile'
 
+            InterfaceTracks.check_boxes_list = set()
             fill_layouts_with_widgets(self, (layout,), (data,), (widget,),
                                       (action,))
 
@@ -363,19 +374,20 @@ class WidgetWithButton(QWidget):
         """
         Открывает pdf файл
         """
-        # try:
-        self.open_pdf_browser = pdfbrowser.PdfBrowser(self.text, self.start_page,
-                                                      self.parent)
-        self.parent.hide()
-        self.open_pdf_browser.show()
-        # except RuntimeError:
-            # QMessageBox.critical(self, "Ошибка", "Невозможно получить доступ к данному файлу",
-            #                      QMessageBox.Ok)
-            # sql_insert_query = f"""delete from FileData where path = '{self.text}'"""
-            # InterfaceTracks.cursor.execute(sql_insert_query)
-            # InterfaceTracks.connection.commit()
-            # self.parent.update_layouts([self.parent.OpenedFilesHLayout, self.parent.BookmarksHLayout])
-            # pass
+        try:
+            self.open_pdf_browser = pdfbrowser.PdfBrowser(self.text, self.start_page,
+                                                          self.parent)
+            self.parent.hide()
+            self.open_pdf_browser.show()
+        except RuntimeError:
+            QMessageBox.critical(self, "Ошибка", "Невозможно получить доступ к данному файлу",
+                                 QMessageBox.Ok)
+            sql_insert_query = f"""delete from FileData where path = '{self.text}'"""
+            InterfaceTracks.cursor.execute(sql_insert_query)
+            InterfaceTracks.connection.commit()
+            self.parent.update_layouts([self.parent.OpenedFilesHLayout,
+                                        self.parent.BookmarksHLayout, self.parent.select_widgets_layout])
+
     def open_file_from_group(self):
         """открывает файл из группы"""
         self.open_pdf_browser = pdfbrowser.PdfBrowser(self.text, self.start_page,
@@ -417,6 +429,7 @@ class SelectFile(QWidget):
             self.file_name = file_name
             self.file_name_label.setText(self.file_name)
             self.checkBox.stateChanged.connect(self.checkbox_handler)
+            
         InterfaceTracks.check_boxes_list.append(self.checkBox)
 
     def checkbox_handler(self):
