@@ -114,6 +114,7 @@ def fill_layout(parent, layout, text, widget, action, bookmark_page=0):
     link_to_file = get_sqlite_request(sql_insert_query)
 
     if action == 'OpenFile' or action == 'OpenFileFromGroup' or action == 'OpenFileWithStartPage':
+        # if link_to_file != []:
         layout.addWidget(widget(parent, link_to_file[0], action, bookmark_page),
                          QtCore.Qt.AlignCenter)
     elif action == 'SelectFile' or action == 'DelGroup' or action == 'OpenGroup':
@@ -141,19 +142,15 @@ class PdfFilesManager(QMainWindow):
         sql_insert_query = """select id from Groups where group_name = ''"""
         InterfaceTracks.group_id = get_sqlite_request(sql_insert_query)[0][0]
 
-        sql_insert_query = """Select FileData.file_name from Main join FileData on FileData.id = 
-        Main.file_name where 
-        FileData.file_name is 
-        not '' and 
-        FileData.file_name 
-        is not null"""
+        sql_insert_query = """Select file_name from FileData where file_name is not '' 
+                              and file_name is not null"""
         uploaded_files_data = sorted(list(map(lambda x: x[0], set(get_sqlite_request(
             sql_insert_query)))))
         uploaded_files_data = list(filter(lambda x: 'pdf' in x.split('.')[1], uploaded_files_data))
         uploaded_files_layout = self.OpenedFilesHLayout
 
         sql_insert_query = """Select FileData.file_name, page from Bookmarks join FileData on 
-        FileData.id = Bookmarks.file_name"""
+        FileData.id = Bookmarks.file_name order by FIleData.file_name"""
         bookmarks_data = get_sqlite_request(sql_insert_query)
         bookmarks_layout = self.BookmarksHLayout
 
@@ -292,6 +289,13 @@ class PdfFilesManager(QMainWindow):
                     filter(lambda x: 'pdf' in x.split('.')[1], data))
                 action = "OpenFile"
 
+            elif layout == self.BookmarksHLayout:
+                sql_insert_query = """Select FileData.file_name, page from Bookmarks join FileData on 
+        FileData.id = Bookmarks.file_name order by FileData.file_name"""
+                data = get_sqlite_request(sql_insert_query)
+                action = "OpenFileWithStartPage"
+                # InterfaceTracks.bookmark_page_interface =
+
             fill_layouts_with_widgets(self, (layout,), (data,), (widget,),
                                       (action,))
 
@@ -359,11 +363,19 @@ class WidgetWithButton(QWidget):
         """
         Открывает pdf файл
         """
+        # try:
         self.open_pdf_browser = pdfbrowser.PdfBrowser(self.text, self.start_page,
                                                       self.parent)
         self.parent.hide()
         self.open_pdf_browser.show()
-
+        # except RuntimeError:
+            # QMessageBox.critical(self, "Ошибка", "Невозможно получить доступ к данному файлу",
+            #                      QMessageBox.Ok)
+            # sql_insert_query = f"""delete from FileData where path = '{self.text}'"""
+            # InterfaceTracks.cursor.execute(sql_insert_query)
+            # InterfaceTracks.connection.commit()
+            # self.parent.update_layouts([self.parent.OpenedFilesHLayout, self.parent.BookmarksHLayout])
+            # pass
     def open_file_from_group(self):
         """открывает файл из группы"""
         self.open_pdf_browser = pdfbrowser.PdfBrowser(self.text, self.start_page,

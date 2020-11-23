@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QMainWindow, QPushButton, QMessageBox
 from PyQt5.QtWidgets import QGridLayout
 
 
-def get_pages(link):
+def get_pages_amount(link):
     doc = fitz.open(link)
     pages_amount = doc.pageCount
     return pages_amount
@@ -32,11 +32,13 @@ class PdfBrowser(QMainWindow):
 
     def __init__(self, link_to_file, start_page=1, file_manager=None):
         super().__init__()
-        uic.loadUi("browser.ui", self)
+
         # variables
         self.start_page = start_page
+        self.file_manager = file_manager
+        self.pages_amount = get_pages_amount(link_to_file)
 
-        self.pages_amount = get_pages(link_to_file)
+        uic.loadUi("browser.ui", self)
         self.page_number = start_page
         self.page_new_number = start_page
         self.zoom = 1
@@ -44,10 +46,8 @@ class PdfBrowser(QMainWindow):
         self.connection = sqlite3.connect("Pdf_reader_db.sqlite")
         self.cursor = self.connection.cursor()
 
-        self.file_manager = file_manager
         self.browser = QtWebEngineWidgets.QWebEngineView(self)
         self.StopAllTrigger = False
-
         # ----------
 
         self.gridLayout.addWidget(self.browser)
@@ -127,6 +127,7 @@ class PdfBrowser(QMainWindow):
         else:
             QMessageBox.critical(self, "Ошибка ", f'Файл по этому пути не может быть получен',
                                  QMessageBox.Ok)
+            return
 
         link_to_html = '/'.join(abspath(getsourcefile(lambda: 0)).split('\\')[:-1] + ['main.html'])
         self.browser.load(QUrl(link_to_html))
@@ -360,6 +361,7 @@ class PdfBrowser(QMainWindow):
         if reply == QMessageBox.Yes:
             self.close()
             if self.file_manager:
+                self.file_manager.update_layouts([self.file_manager.BookmarksHLayout])
                 self.file_manager.show()
             else:
                 filesmanager.PdfFilesManager().show()
@@ -370,7 +372,7 @@ class PdfBrowser(QMainWindow):
         :param event: Событие закрытия окна
         """
         sqlite_action = f"""update Main set last_page = {self.page_number} \
-        where id = last_insert_rowid();"""
+                            where id = last_insert_rowid();"""
         self.StopAllTrigger = True
         self.cursor.execute(sqlite_action)
         self.connection.commit()
