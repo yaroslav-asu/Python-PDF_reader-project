@@ -361,7 +361,7 @@ class PdfBrowser(QMainWindow):
         if reply == QMessageBox.Yes:
             self.close()
             if self.file_manager:
-                self.file_manager.update_layouts([self.file_manager.BookmarksHLayout])
+                filesmanager.update_layouts(self.file_manager, [self.file_manager.BookmarksHLayout])
                 self.file_manager.show()
             else:
                 filesmanager.PdfFilesManager().show()
