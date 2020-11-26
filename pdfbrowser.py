@@ -7,7 +7,7 @@ from datetime import datetime
 from inspect import getsourcefile
 from os.path import abspath
 
-from PyQt5 import QtWebEngineWidgets, QtWidgets, uic
+from PyQt5 import QtWebEngineWidgets, uic
 from PyQt5.QtCore import QUrl
 from PyQt5.QtWidgets import QMainWindow, QPushButton, QMessageBox
 from PyQt5.QtWidgets import QGridLayout
@@ -280,7 +280,7 @@ class PdfBrowser(QMainWindow):
         if page_number_in_text_line.isdigit():
             page_number_in_text_line = int(page_number_in_text_line)
             if page_number_in_text_line != self.page_number and \
-                self.pages_amount >= page_number_in_text_line > 0:
+                    self.pages_amount >= page_number_in_text_line > 0:
                 self.page_change(page_number_in_text_line)
             else:
                 self.PageNumberLineEdit.setText(str(self.page_number))
@@ -294,7 +294,7 @@ class PdfBrowser(QMainWindow):
         Изменяет текущий zoom на переданный, при условии, что он подходит
         вызывается при любом изменении zoom
         при вызове в конце редактирования поля zoom, new_zoom = None
-        :param current_zoom: новый zoom
+        :param new_zoom: новый zoom
         """
         if not new_zoom:
             if self.ZoomCoofLineEdit.text().replace('.', '', 1).isdigit():

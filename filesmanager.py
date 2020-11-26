@@ -1,6 +1,7 @@
 import sqlite3
 import pdfbrowser
 import showgroupselements
+import sql_requests
 from functools import partial
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QMainWindow, QWidget, QMessageBox, QFileDialog
@@ -19,7 +20,7 @@ class InterfaceTracks:
     cursor: sqlite3
     list_with_groups_widgets = []
     check_boxes_list = set()
-    check_box_unchecked_by_function = False
+    block_checkbox = False
 
 
 def clear_all_checkboxes():
@@ -27,10 +28,10 @@ def clear_all_checkboxes():
     Очищает все checkbox от выделения
     Вызывается при зоздании новой группы
     """
-    InterfaceTracks.check_box_unchecked_by_function = True
+    InterfaceTracks.block_checkbox = True
     for checkbox in list(InterfaceTracks.check_boxes_list):
         checkbox.setChecked(False)
-    InterfaceTracks.check_box_unchecked_by_function = False
+    InterfaceTracks.block_checkbox = False
 
 
 def clear_layout(layout):
@@ -137,12 +138,14 @@ def update_layouts(file_manager, layouts):
         clear_layout(layout)
         widget = WidgetWithButton
         if layout == file_manager.delete_groups_layout or layout == file_manager.GroupsHLayout:
+
             sql_insert_query = """Select distinct group_name from Groups join main.GroupsElements on
-                                  Groups.id = group_id join FileData FD on 
-                                  GroupsElements.file_name = FD.file_name
-                                  where group_name != '' order by group_name"""
+                                          Groups.id = group_id join FileData FD on
+                                          GroupsElements.file_name = FD.file_name
+                                          where group_name != '' order by group_name"""
             data = list(map(lambda x: x[0], get_sqlite_request(
                 sql_insert_query)))
+
             if layout == file_manager.GroupsHLayout:
                 action = 'OpenGroup'
             else:
@@ -228,6 +231,9 @@ class PdfFilesManager(QMainWindow):
         self.group_name = None
 
     def get_uploaded_files_data(self):
+        """
+        Получение из БД имен загруженных файлов
+        """
         sql_insert_query = """Select distinct file_name from FileData where file_name is not '' 
                               and file_name is not null order by file_name"""
         uploaded_files_data = sorted(list(map(lambda x: x[0], get_sqlite_request(
@@ -236,12 +242,18 @@ class PdfFilesManager(QMainWindow):
                                                uploaded_files_data))
 
     def get_bookmarks_data(self):
+        """
+        Получение из БД данных на каких страницах закладки и имен файлов с закладками
+        """
         sql_insert_query = """Select distinct FileData.file_name, page from Bookmarks join 
                               FileData on FileData.id = Bookmarks.file_name order by 
                               FIleData.file_name"""
         self.bookmarks_data = list(get_sqlite_request(sql_insert_query))
 
     def get_groups_data(self):
+        """
+        Получение из БД названий групп
+        """
         sql_insert_query = """Select distinct group_name from Groups join main.GroupsElements on
                               Groups.id = group_id join FileData FD on GroupsElements.file_name = 
                               FD.file_name where group_name != '' order by group_name"""
@@ -249,19 +261,25 @@ class PdfFilesManager(QMainWindow):
             sql_insert_query)))
 
     def get_select_widget_data(self):
+        """
+        Получение из БД данных имен виджетов для select_widget
+        """
         sql_insert_query = """Select distinct FileData.file_name from FileData where file_name is 
                               not '' and file_name is not null order by FileData.file_name"""
         self.select_widget_data = sorted(list(map(lambda x: x[0], get_sqlite_request(
             sql_insert_query))))
 
     def upload_new_file(self):
+        """
+        Загрузка нового файла
+        """
         link_to_file = QFileDialog.getOpenFileName(self, 'Open file', '', 'Файл Pdf (*pdf)')[0]
 
         file_name = get_file_name(link_to_file)
         sqlite_insert_query = f"""select file_name from FileData where file_name = '{file_name}'"""
         InterfaceTracks.cursor.execute(sqlite_insert_query)
         sqlite_request = InterfaceTracks.cursor.fetchone()
-        if not sqlite_request:
+        if sqlite_request:
             QMessageBox.critical(self, "Ошибка ", "Данный файл уже был загружен \nОн не будет "
                                                   "загружен",
                                  QMessageBox.Ok)
@@ -309,6 +327,7 @@ class PdfFilesManager(QMainWindow):
             QMessageBox.information(self, "Оповещение ", "Группа успешно создана",
                                     QMessageBox.Ok)
             self.create_group()
+            update_layouts(self, [self.GroupsHLayout, self.delete_groups_layout])
 
     def create_group(self):
         """
@@ -318,13 +337,12 @@ class PdfFilesManager(QMainWindow):
         """
 
         sql_insert_query = f"""Update Groups set group_name = '{self.group_name}' where id = '{
-        InterfaceTracks.group_id}'"""
+                               InterfaceTracks.group_id}'"""
         InterfaceTracks.cursor.execute(sql_insert_query)
         InterfaceTracks.connection.commit()
         sql_insert_query = """insert into Groups (group_name) values ('')"""
         InterfaceTracks.cursor.execute(sql_insert_query)
         InterfaceTracks.group_id += 1
-        update_layouts(self, [self.GroupsHLayout, self.delete_groups_layout])
 
     def delete_groups(self, group_names):
         """
@@ -349,6 +367,9 @@ class PdfFilesManager(QMainWindow):
 
 
 class WidgetWithButton(QWidget):
+    """
+    Виджет для открытия файлов, групп; удаления групп и т.п (виджет с кнопкой)
+    """
     open_pdf_browser: pdfbrowser
     group_name: str
 
@@ -462,6 +483,9 @@ class WidgetWithButton(QWidget):
 
 
 class SelectFile(QWidget):
+    """
+    Виджет применяется для выбора файлов (Виджет с галочкой)
+    """
     def __init__(self, parent, file_manager, file_name, action):
         super().__init__(parent)
         self.parent = parent
@@ -480,14 +504,13 @@ class SelectFile(QWidget):
         """
         if self.checkBox.checkState():
             sql_insert_query = """insert into GroupsElements (group_id, 
-            file_name) values (?, 
-            ?)"""
+                                  file_name) values (?, ?)"""
             InterfaceTracks.cursor.execute(sql_insert_query, (InterfaceTracks.group_id,
                                                               self.file_name))
             InterfaceTracks.connection.commit()
-        elif not InterfaceTracks.check_box_unchecked_by_function:
+        elif not InterfaceTracks.block_checkbox:
             sql_insert_query = f"""delete from GroupsElements where file_name = '{self.file_name}' \
-    and group_id = '{InterfaceTracks.group_id}'"""
+                                   and group_id = '{InterfaceTracks.group_id}'"""
             InterfaceTracks.cursor.execute(sql_insert_query)
             InterfaceTracks.connection.commit()
 
