@@ -2,8 +2,8 @@ import fitz
 import base64
 import sqlite3
 import filesmanager
+from sql_requests import SqliteRequest
 from functools import partial
-from datetime import datetime
 from inspect import getsourcefile
 from os.path import abspath
 
@@ -24,6 +24,7 @@ def buttons_cooldown(*args):
 
 
 class PdfBrowser(QMainWindow):
+    current_file_data_id_exist: list
     gridLayout: QGridLayout
     pushButton: QPushButton
     current_file_data_id: int
@@ -64,7 +65,7 @@ class PdfBrowser(QMainWindow):
             self.link_to_file = link_to_file
 
         self.get_current_file_id()
-        self.put_time_data_in_bd()
+        SqliteRequest().put_time_data_in_bd(self.file_name, self.current_file_data_id)
         self.set_start_page()
         self.open_pdf_file()
 
@@ -89,8 +90,8 @@ class PdfBrowser(QMainWindow):
         self.OpenFileManagerButton.clicked.connect(self.open_file_manager)
 
     def current_file_data_id_exist(self):
-        """Возвращает итерируемый объект с id файла, если он ранее был загружен или же пустой
-        итерируемый объект, если раньше его не загружали"""
+        """Возвращает итерируемый объект с id файла, если он ранее был загружен или же none,
+        если раньше его не загружали"""
         sqlite_insert_query = f"""select id from FileData where file_name = '{self.file_name}' 
                 and path = '{self.link_to_file}'"""
         self.cursor.execute(sqlite_insert_query)
@@ -150,62 +151,14 @@ class PdfBrowser(QMainWindow):
         переменную,
         иначе загружает в БД имя и путь файла и так же записывает id в переменную
         """
-        if self.current_file_data_id_exist():
-            self.current_file_data_id = self.current_file_data_id_exist()[0]
+        self.current_file_data_id_exist = SqliteRequest().get_current_file_data(self.file_name,
+                                                                                self.link_to_file)
+        if self.current_file_data_id_exist:
+            self.current_file_data_id = self.current_file_data_id_exist[0]
         else:
-            sqlite_insert_query = f"""INSERT INTO FileData (file_name, path) VALUES (?, ?)"""
-            data_tuple = (
-                self.file_name, self.link_to_file)
-            self.cursor.execute(sqlite_insert_query, data_tuple)
+            SqliteRequest().insert_file_name_path_into_db(self.file_name, self.link_to_file)
 
-            sqlite_insert_query = """Select max(id) from FileData"""
-            self.cursor.execute(sqlite_insert_query)
-            self.connection.commit()
-            self.current_file_data_id = self.cursor.fetchone()[0]
-
-    def put_time_data_in_bd(self):
-        """
-        Загружает в БД время открытия файла
-        """
-        if self.file_name.split('.')[1] == 'pdf':
-            sqlite_insert_query = f"""INSERT INTO Main (file_name, date) VALUES (?,  ?)"""
-            data_tuple = (
-                self.current_file_data_id,
-                datetime.today().strftime('%H:%M:%S %d.%m.%Y'))
-            self.cursor.execute(sqlite_insert_query, data_tuple)
-
-    def add_bookmark(self):
-        """
-        Добавляет в БД данные имени и страницу закладки
-        """
-        sqlite_action = """Insert into Bookmarks (file_name, page) values (?, ?)"""
-        data_tuple = (self.current_file_data_id, self.page_number)
-        self.cursor.execute(sqlite_action, data_tuple)
-        self.connection.commit()
-
-    def del_bookmark(self):
-        """
-        Удаляет из БД данные о существовании закладки у файла на странице page_number
-        """
-        sqlite_action = f"""delete from Bookmarks where page = {self.page_number}"""
-        self.cursor.execute(sqlite_action)
-        self.connection.commit()
-
-    def is_bookmark_on_page(self, page_number):
-        """
-        Проверяет существование закладки на переданной странице
-
-        :param page_number: Получает страницу для проверки
-        :return: Возвращает bool который отражает существание закладки в данном файле на
-        page_number странице
-        """
-        self.bookmarks = list(self.cursor.execute(
-            f"""select page from Bookmarks inner join FileData on FileData.id 
-                = Bookmarks.file_name where FileData.file_name = '{self.file_name}'"""))
-        if (page_number,) in self.bookmarks:
-            return True
-        else:
-            return False
+            self.current_file_data_id = SqliteRequest().get_current_file_data_id()
 
     def switch_bookmark_button_action(self):
         """
@@ -215,10 +168,10 @@ class PdfBrowser(QMainWindow):
         Если нет: создается
         """
         self.switch_bookmark_button_set_text()
-        if self.is_bookmark_on_page(self.page_number):
-            self.del_bookmark()
+        if SqliteRequest().is_bookmark_on_page(self.page_number, self.file_name):
+            SqliteRequest().del_bookmark(self.page_number)
         else:
-            self.add_bookmark()
+            SqliteRequest().add_bookmark(self.current_file_data_id, self.page_number)
         self.switch_bookmark_button_set_text()
 
     def switch_bookmark_button_set_text(self):
@@ -226,7 +179,7 @@ class PdfBrowser(QMainWindow):
         Изменяет текст кнопки в зависимости от того, существует ли
         закладка на данной странице или нет
         """
-        if self.is_bookmark_on_page(self.page_number):
+        if SqliteRequest().is_bookmark_on_page(self.page_number, self.file_name):
             self.SwitchBookmarkButton.setText('Удалить закладку')
         else:
             self.SwitchBookmarkButton.setText('Добавить закладку')
@@ -280,7 +233,7 @@ class PdfBrowser(QMainWindow):
         if page_number_in_text_line.isdigit():
             page_number_in_text_line = int(page_number_in_text_line)
             if page_number_in_text_line != self.page_number and \
-                    self.pages_amount >= page_number_in_text_line > 0:
+               self.pages_amount >= page_number_in_text_line > 0:
                 self.page_change(page_number_in_text_line)
             else:
                 self.PageNumberLineEdit.setText(str(self.page_number))
@@ -371,10 +324,8 @@ class PdfBrowser(QMainWindow):
         Выполняет все что нужно выполнить до закрытия окна
         :param event: Событие закрытия окна
         """
-        sqlite_action = f"""update Main set last_page = {self.page_number} \
-                            where id = last_insert_rowid();"""
+        SqliteRequest().set_last_opened_page_to_file(self.page_number)
         self.StopAllTrigger = True
-        self.cursor.execute(sqlite_action)
         self.connection.commit()
         self.connection.close()
         event.accept()

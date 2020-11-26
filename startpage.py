@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QFileDialog
 import pdfbrowser
 import filesmanager
 
+sys._excepthook = sys.excepthook
+
 
 class MainWindow(QMainWindow):
     SelectFileButton: QPushButton
@@ -29,8 +31,15 @@ class MainWindow(QMainWindow):
         self.close()
 
 
+def my_exception_hook(exctype, value, traceback):
+    print(exctype, value, traceback)
+    sys._excepthook(exctype, value, traceback)
+    sys.exit(1)
+
+
 if __name__ == '__main__':
     sys.argv.append('--remote-debugging-port=5008')
+    sys.excepthook = my_exception_hook
     app = QApplication(sys.argv)
     ex = MainWindow()
     ex.show()
