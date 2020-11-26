@@ -170,7 +170,7 @@ class PdfFilesManager(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        uic.loadUi('uploadedfiles.ui', self)
+        uic.loadUi('uis/uploadedfiles.ui', self)
         InterfaceTracks.connection = sqlite3.connect("Pdf_reader_db.sqlite")
         InterfaceTracks.cursor = InterfaceTracks.connection.cursor()
         InterfaceTracks.file_manager = self
@@ -267,7 +267,7 @@ class WidgetWithButton(QWidget):
 
     def __init__(self, parent, file_manager, text, action, bookmark_page=0):
         super().__init__(parent)
-        uic.loadUi('opened_file_data_widget.ui', self)
+        uic.loadUi('uis/opened_file_data_widget.ui', self)
         self.parent = parent
         self.file_manager = file_manager
         self.start_page = bookmark_page
@@ -379,7 +379,7 @@ class SelectFile(QWidget):
         super().__init__(parent)
         self.parent = parent
         self.file_manager = file_manager
-        uic.loadUi('select_file_to_create_group_widget.ui', self)
+        uic.loadUi('uis/select_file_to_create_group_widget.ui', self)
         if action == 'SelectFile':
             self.file_name = file_name
             self.file_name_label.setText(self.file_name)

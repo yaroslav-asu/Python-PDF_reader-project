@@ -39,7 +39,7 @@ class PdfBrowser(QMainWindow):
         self.file_manager = file_manager
         self.pages_amount = get_pages_amount(link_to_file)
 
-        uic.loadUi("browser.ui", self)
+        uic.loadUi("uis/browser.ui", self)
         self.page_number = start_page
         self.page_new_number = start_page
         self.zoom = 1

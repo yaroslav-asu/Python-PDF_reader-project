@@ -15,7 +15,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        uic.loadUi("startpage.ui", self)
+        uic.loadUi("uis/startpage.ui", self)
         self.SelectFileButton.clicked.connect(self.select_file)
         self.OpenNewFileButton.clicked.connect(self.open_new_file)
 
