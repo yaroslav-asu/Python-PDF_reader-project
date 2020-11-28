@@ -9,21 +9,6 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QMessageBox, QFileDialog
 from PyQt5 import QtCore
 
 
-# class InterfaceTracks:
-#     """
-#     Класс содержащий переменные для пользования программой
-#     """
-#     file_name_in_label: str
-#     bookmark_page_interface: int
-#     group_id: str
-#     file_manager: object
-#     connection: sqlite3
-#     cursor: sqlite3
-#     list_with_groups_widgets = []
-#     check_boxes_list = set()
-#     block_checkbox = False
-
-
 def clear_all_checkboxes():
     """
     Очищает все checkbox от выделения
@@ -162,6 +147,18 @@ def get_file_name(link):
     return link.split('/')[-1]
 
 
+def delete_groups(parent, group_names):
+    """
+    Отвечает за удаление групп, подающихся на вход
+    :param parent: объект файл менеджера для обращения к нему
+    :param group_names: Массив кортежей с именами групп для удаления
+    """
+    for group_name_tuple in group_names:
+        group_name = group_name_tuple[0]
+        SqliteRequest().delete_group(group_name)
+        update_layouts(parent, (parent.delete_groups_layout, parent.GroupsHLayout))
+
+
 class PdfFilesManager(QMainWindow):
     uploaded_files_data: list
     bookmarks_data: list
@@ -236,7 +233,7 @@ class PdfFilesManager(QMainWindow):
             return
         clear_all_checkboxes()
 
-        SqliteRequest().delete_groups(self, SqliteRequest().get_group_names_for_delete())
+        delete_groups(self, SqliteRequest().get_group_names_for_delete())
         is_group_name_already_taken = SqliteRequest().is_group_name_already_taken(self.group_name)
 
         if is_group_name_already_taken:
@@ -292,7 +289,7 @@ class WidgetWithButton(QWidget):
             self.text = self.text[0]
             self.Button.clicked.connect(self.open_file_from_group)
         elif action == 'DelGroup':
-            self.Button.clicked.connect(partial(SqliteRequest().delete_groups, self.file_manager,
+            self.Button.clicked.connect(partial(delete_groups, self.file_manager,
                                                 [(self.text,)]))
             self.Button.setText('Удалить')
             InterfaceTracks.list_with_groups_widgets.append(self)

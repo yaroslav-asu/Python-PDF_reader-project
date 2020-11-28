@@ -89,25 +89,11 @@ class PdfBrowser(QMainWindow):
         self.SwitchBookmarkButton.clicked.connect(self.switch_bookmark_button_action)
         self.OpenFileManagerButton.clicked.connect(self.open_file_manager)
 
-    def current_file_data_id_exist(self):
-        """Возвращает итерируемый объект с id файла, если он ранее был загружен или же none,
-        если раньше его не загружали"""
-        sqlite_insert_query = f"""select id from FileData where file_name = '{self.file_name}' 
-                and path = '{self.link_to_file}'"""
-        self.cursor.execute(sqlite_insert_query)
-        self.connection.commit()
-        return self.cursor.fetchone()
-
     def set_start_page(self):
         """Получает данные из БД, выводит окно с вопросом о продолжении с последней начатой
         страницы, по получении положительного ответа записывает в стартовую страницу на которой
         в последний раз остановился пользователь"""
-        sqlite_insert_query = f"""Select max(Main.id), Main.last_page from Main inner join 
-        FileData on FileData.id = Main.file_name where FileData.file_name = '{self.file_name}' and 
-        FileData.path = '{self.link_to_file}' and Main.last_page is not null and Main.last_page is 
-        not ''"""
-        self.cursor.execute(sqlite_insert_query)
-        sqlite_last_page_answer = self.cursor.fetchone()
+        sqlite_last_page_answer = SqliteRequest().get_start_page(self.file_name, self.link_to_file)
 
         if self.start_page == 1 and sqlite_last_page_answer:
             if sqlite_last_page_answer != (None, None) and sqlite_last_page_answer[1] != 1:
@@ -153,6 +139,7 @@ class PdfBrowser(QMainWindow):
         """
         self.current_file_data_id_exist = SqliteRequest().get_current_file_data(self.file_name,
                                                                                 self.link_to_file)
+
         if self.current_file_data_id_exist:
             self.current_file_data_id = self.current_file_data_id_exist[0]
         else:
@@ -233,7 +220,7 @@ class PdfBrowser(QMainWindow):
         if page_number_in_text_line.isdigit():
             page_number_in_text_line = int(page_number_in_text_line)
             if page_number_in_text_line != self.page_number and \
-               self.pages_amount >= page_number_in_text_line > 0:
+                self.pages_amount >= page_number_in_text_line > 0:
                 self.page_change(page_number_in_text_line)
             else:
                 self.PageNumberLineEdit.setText(str(self.page_number))

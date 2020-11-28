@@ -4,6 +4,7 @@ from interface_tracks import InterfaceTracks
 
 
 class SqliteRequest:
+
     def __init__(self):
         self.cursor = InterfaceTracks.cursor
         self.connection = InterfaceTracks.connection
@@ -90,8 +91,8 @@ class SqliteRequest:
         """
         Получение из БД данных на каких страницах закладки и имен файлов с закладками
         """
-        sql_insert_query = """Select distinct FileData.file_name, page from Bookmarks join 
-                              FileData on FileData.id = Bookmarks.file_name order by 
+        sql_insert_query = """Select distinct FileData.file_name, page from Bookmarks join
+                              FileData on FileData.id = Bookmarks.file_name order by
                               FIleData.file_name"""
         return list(self.get_sqlite_request(sql_insert_query))
 
@@ -156,19 +157,15 @@ class SqliteRequest:
         InterfaceTracks.group_id += 1
 
     @staticmethod
-    def delete_groups(parent, group_names):
+    def delete_group(group_name):
         """
         Отвечает за удаление группы
-        :param parent: объект файл менеджера для обращения к нему
-        :param group_names: Массив кортежей с именами групп для удаления
+        :param group_name: имя группы для удаления
         """
-        for group_name_tuple in group_names:
-            group_name = group_name_tuple[0]
-            sql_insert_query = f"""Delete from Groups where main.Groups.group_name = 
-                                   '{group_name}'"""
-            InterfaceTracks.cursor.execute(sql_insert_query)
-            InterfaceTracks.connection.commit()
-            parent.update_layouts(parent, (parent.delete_groups_layout, parent.GroupsHLayout))
+        sql_insert_query = f"""Delete from Groups where main.Groups.group_name = 
+                                       '{group_name}'"""
+        InterfaceTracks.cursor.execute(sql_insert_query)
+        InterfaceTracks.connection.commit()
 
     @staticmethod
     def delete_file_from_db(text):
@@ -268,3 +265,11 @@ class SqliteRequest:
         sqlite_action = f"""update Main set last_page = {page_number} \
                                     where id = last_insert_rowid();"""
         self.cursor.execute(sqlite_action)
+
+    def get_start_page(self, file_name, link_to_file):
+        sqlite_insert_query = f"""Select max(Main.id), Main.last_page from Main inner join 
+                FileData on FileData.id = Main.file_name where FileData.file_name = '{file_name}' 
+                and FileData.path = '{link_to_file}' and Main.last_page is not null and 
+                Main.last_page is not ''"""
+        self.cursor.execute(sqlite_insert_query)
+        return self.cursor.fetchone()
