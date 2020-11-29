@@ -167,7 +167,7 @@ class PdfFilesManager(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        uic.loadUi('uis/uploadedfiles.ui', self)
+        uic.loadUi('uis/file_manager.ui', self)
         InterfaceTracks.connection = sqlite3.connect("Pdf_reader_db.sqlite")
         InterfaceTracks.cursor = InterfaceTracks.connection.cursor()
         InterfaceTracks.file_manager = self
