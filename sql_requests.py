@@ -145,7 +145,6 @@ class SqliteRequest:
         """
         Переименовывает последнюю группу с названием '' в название группы, так же создает новую
         группу с названием '' для привязки к ее id файлов
-        Вызывается после нажатия на кнопку создания группы из функции create_group_button_action
         """
 
         sql_insert_query = f"""Update Groups set group_name = '{group_name}' where id = '{

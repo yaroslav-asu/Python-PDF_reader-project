@@ -214,7 +214,6 @@ class PdfBrowser(QMainWindow):
     def parse_page_number(self):
         """
         Получает номер страницы из поля ввода
-        Вызывается при заканчивании редактирования поля ввода
         """
         page_number_in_text_line = self.PageNumberLineEdit.text()
         if page_number_in_text_line.isdigit():
@@ -232,7 +231,6 @@ class PdfBrowser(QMainWindow):
     def zoom_change(self, new_zoom=None):
         """
         Изменяет текущий zoom на переданный, при условии, что он подходит
-        вызывается при любом изменении zoom
         при вызове в конце редактирования поля zoom, new_zoom = None
         :param new_zoom: новый zoom
         """
@@ -255,7 +253,6 @@ class PdfBrowser(QMainWindow):
         """
         Задает текст для поля ввода zoom при его изменении, либо
         :param current_zoom: текущий зум
-        вызывается при нужде изменения текста в поле ввода zoom
         """
         if str(current_zoom).replace('.', '', 1).isdigit():
             if float(current_zoom).is_integer():

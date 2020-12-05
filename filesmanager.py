@@ -12,7 +12,6 @@ from PyQt5 import QtCore
 def clear_all_checkboxes():
     """
     Очищает все checkbox от выделения
-    Вызывается при зоздании новой группы
     """
     InterfaceTracks.block_checkbox = True
     for checkbox in list(InterfaceTracks.check_boxes_list):
@@ -23,7 +22,6 @@ def clear_all_checkboxes():
 def clear_layout(layout):
     """
     Очищает все объекты из лэйаута
-    Вызывается при нужде очистки лэйаута от объектов внутри
     :param layout: лэйаут
     """
     index = layout.count() - 1
@@ -48,7 +46,6 @@ def is_checkbox_checked():
 def get_sqlite_request(request):
     """
     Выполняет запрос к БД
-    Вызывается при нужде выполнения запроса к БД
 
     :param request: Запрос к БД
     :return: Ответ от БД
@@ -62,7 +59,6 @@ def fill_layouts_with_widgets(parent, layouts_tuple, data_tuple, widgets, action
     """
     Итерируется по всем кортежам, передает их в fill_layout и тем самым заполняет все лэйауты
     виджетами с записанными в их местами для текста данными и применеными вариантами действий
-    Вызывается при нужде заполнения лэйаутов
 
     :param parent: Родитель для дальнейшего обращения виджетами к нему
     :param layouts_tuple: Кортеж из лэйаутов
@@ -114,7 +110,6 @@ def fill_layout(parent, layout, text, widget, action, bookmark_page=0):
 def update_layouts(file_manager, layouts):
     """
     Отвечает за обновление лэйаутов, переданных в функцию
-    Вызывается при нужде обновить лэйаут
 
     :param file_manager: Объект файл менеджера
     :param layouts: итерируемый объект с лэйаутами
@@ -220,7 +215,6 @@ class PdfFilesManager(QMainWindow):
         """
         Проверяет правильность названия группы и выбраны ли какие то файлы для группы, если все
         хорошо, создает группу
-        Вызывается при нажатии на кнопку создания группы
         """
         InterfaceTracks.connection.commit()
         self.group_name = self.group_name_line_edit.text()
@@ -389,7 +383,6 @@ class SelectFile(QWidget):
     def checkbox_handler(self):
         """
         Обрабатывает нажатые чекбоксы
-        Вызывается при изменении состояния чекбокса
         """
         if self.checkBox.checkState():
             SqliteRequest().insert_group_element(self.file_name)
