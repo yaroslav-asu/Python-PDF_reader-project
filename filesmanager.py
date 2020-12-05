@@ -202,16 +202,16 @@ class PdfFilesManager(QMainWindow):
         """
         Загрузка нового файла
         """
-        link_to_file = QFileDialog.getOpenFileName(self, 'Open file', '', 'Файл Pdf (*pdf)')[0]
-
-        file_name = get_file_name(link_to_file)
-        sqlite_request = SqliteRequest().get_file_name(file_name)
-        if sqlite_request:
-            QMessageBox.critical(self, "Ошибка ", "Данный файл уже был загружен \nОн не будет "
-                                                  "загружен",
-                                 QMessageBox.Ok)
-            return
-        SqliteRequest().insert_file_name_and_path_into_db(file_name, link_to_file)
+        links_to_files = QFileDialog.getOpenFileNames(self, 'Upload file', '', 'Файл Pdf (*pdf)')[0]
+        for link_to_file in links_to_files:
+            file_name = get_file_name(link_to_file)
+            sqlite_request = SqliteRequest().get_file_name(file_name)
+            if sqlite_request:
+                QMessageBox.critical(self, "Ошибка ", f"Файл {file_name} уже был загружен "
+                                                      "\nОн не будет загружен",
+                                     QMessageBox.Ok)
+                continue
+            SqliteRequest().insert_file_name_and_path_into_db(file_name, link_to_file)
 
     def create_group_button_action(self):
         """
